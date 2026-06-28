@@ -71,7 +71,7 @@ private fun DrawScope.drawPose(pose: Pose, color: Color, sw: Float, hr: Float) {
     l(2, 12); l(12, 13); l(13, 14)  // right leg
 }
 
-private fun pose(label: String, vararg v: Float) = Pose(label, v.toFloatArray())
+private fun pose(label: String, vararg v: Float) = Pose(label, v)
 
 private fun getPoses(movement: MovementType): List<Pose> = when (movement) {
 
