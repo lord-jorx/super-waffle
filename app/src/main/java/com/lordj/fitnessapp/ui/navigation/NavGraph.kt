@@ -10,6 +10,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.lordj.fitnessapp.ui.screens.body.BodyWeightScreen
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseDetailScreen
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseListScreen
 import com.lordj.fitnessapp.ui.screens.exercises.QuickExerciseScreen
@@ -48,6 +49,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Garmin : Screen("garmin", "Garmin", Icons.Filled.Watch)
     object Settings : Screen("settings", "Ajustes", Icons.Filled.Settings)
     object WorkoutCreate : Screen("workout_create", "Nueva Rutina", Icons.Filled.Add)
+    object BodyWeight : Screen("body_weight", "Peso Corporal", Icons.Filled.MonitorWeight)
     object ProgramDetail : Screen("program/{programId}", "", Icons.Filled.LibraryBooks) {
         fun createRoute(id: String) = "program/$id"
     }
@@ -189,8 +191,12 @@ fun FitnessNavGraph() {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) }
+                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) },
+                    onNavigateToBodyWeight = { navController.navigate(Screen.BodyWeight.route) }
                 )
+            }
+            composable(Screen.BodyWeight.route) {
+                BodyWeightScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Screen.ProgramDetail.route,

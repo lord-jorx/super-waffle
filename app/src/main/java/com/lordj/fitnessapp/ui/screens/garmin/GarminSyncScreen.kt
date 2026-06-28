@@ -1,10 +1,13 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.health.connect.client.HealthConnectClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,30 +57,33 @@ fun GarminSyncScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Launcher for the Health Connect permission management screen
-    val settingsLauncher = rememberLauncherForActivityResult(
+    // Proper Health Connect permission contract — uses the SDK dialog (required for Samsung Android 16+)
+    val requestPermissions = rememberLauncherForActivityResult(
+        contract = remember(context) {
+            runCatching {
+                HealthConnectClient.getOrCreate(context).permissionController
+                    .createRequestPermissionResultContract()
+            }.getOrElse {
+                // Fallback when HC client can't be created (e.g. not installed yet)
+                object : ActivityResultContract<Set<String>, Set<String>>() {
+                    override fun createIntent(ctx: Context, input: Set<String>) =
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", ctx.packageName, null))
+                    override fun parseResult(resultCode: Int, intent: Intent?) = emptySet()
+                }
+            }
+        }
+    ) { granted ->
+        vm.onPermissionsResult(granted.containsAll(HealthConnectManager.PERMISSIONS))
+    }
+
+    // For the manual "open app settings" fallback button
+    val appSettingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { vm.checkStatus() }
 
-    fun openHealthConnectPermissions() {
-        val intents = listOf(
-            Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
-                putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
-            },
-            Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS"),
-        )
-        for (intent in intents) {
-            try { settingsLauncher.launch(intent); return } catch (_: Exception) { }
-        }
-        // Fallback garantizado: ajustes de la app (siempre funciona en Android)
-        settingsLauncher.launch(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", context.packageName, null))
-        )
-    }
-
     fun openAppSettings() {
-        settingsLauncher.launch(
+        appSettingsLauncher.launch(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.fromParts("package", context.packageName, null))
         )
@@ -174,7 +180,7 @@ fun GarminSyncScreen(
                                     "y calorías en Health Connect para leer tus entrenamientos de Garmin.",
                         )
                         Button(
-                            onClick = { openHealthConnectPermissions() },
+                            onClick = { requestPermissions.launch(HealthConnectManager.PERMISSIONS) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.Key, null)

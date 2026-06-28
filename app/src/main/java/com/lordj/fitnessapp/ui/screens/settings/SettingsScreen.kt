@@ -23,16 +23,24 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lordj.fitnessapp.FitnessApp
+import com.lordj.fitnessapp.data.preferences.ThemeMode
 import com.lordj.fitnessapp.ui.viewmodel.GarminSyncState
 import com.lordj.fitnessapp.ui.viewmodel.GarminSyncViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onNavigateToGarmin: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onNavigateToGarmin: () -> Unit,
+    onNavigateToBodyWeight: () -> Unit = {}
+) {
     val context = LocalContext.current
+    val app = context.applicationContext as FitnessApp
     val lifecycleOwner = LocalLifecycleOwner.current
     val vm: GarminSyncViewModel = viewModel()
     val state by vm.state.collectAsStateWithLifecycle()
+    val themeMode by app.preferences.themeMode.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -82,8 +90,67 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToGarmin: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SectionLabel("Sincronización")
+            // ── Appearance ──────────────────────────────────────────────────
+            SectionLabel("Aspecto")
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Palette, null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Tema",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium)
+                            Text("Apariencia de la aplicación",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf(
+                            ThemeMode.SYSTEM to "Sistema",
+                            ThemeMode.LIGHT to "Claro",
+                            ThemeMode.DARK to "Oscuro"
+                        ).forEach { (mode, label) ->
+                            FilterChip(
+                                selected = themeMode == mode,
+                                onClick = { app.preferences.setThemeMode(mode) },
+                                label = { Text(label) },
+                                leadingIcon = if (themeMode == mode) {
+                                    { Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp)) }
+                                } else null,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
 
+            Spacer(Modifier.height(8.dp))
+
+            // ── Salud & Cuerpo ───────────────────────────────────────────────
+            SectionLabel("Salud & Cuerpo")
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    SettingsItem(
+                        icon = Icons.Filled.MonitorWeight,
+                        title = "Peso Corporal",
+                        subtitle = "Registra y visualiza tu evolución de peso",
+                        onClick = onNavigateToBodyWeight
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // ── Sincronización ───────────────────────────────────────────────
+            SectionLabel("Sincronización")
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     SettingsItem(
@@ -114,8 +181,10 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToGarmin: () -> Unit) {
 
                     if (state is GarminSyncState.NeedsPermissions) {
                         HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                        Column(modifier = Modifier.padding(start = 72.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(
+                            modifier = Modifier.padding(start = 72.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text("Cómo activar en Samsung / Android 14+:",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
@@ -142,9 +211,10 @@ fun SettingsScreen(onBack: () -> Unit, onNavigateToGarmin: () -> Unit) {
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            SectionLabel("Aplicación")
+            Spacer(Modifier.height(8.dp))
 
+            // ── Aplicación ───────────────────────────────────────────────────
+            SectionLabel("Aplicación")
             Card(modifier = Modifier.fillMaxWidth()) {
                 SettingsItem(
                     icon = Icons.Filled.Info,

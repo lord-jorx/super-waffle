@@ -111,27 +111,35 @@ fun ExerciseDetailScreen(
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                             .background(catColor.copy(alpha = 0.12f)).padding(20.dp)
                     ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(categoryEmoji(ex.category),
-                                    style = MaterialTheme.typography.displaySmall)
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    Text(ex.name, style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold)
-                                    Text(ex.category, style = MaterialTheme.typography.labelLarge,
-                                        color = catColor)
+                        Row(verticalAlignment = Alignment.Top) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(categoryEmoji(ex.category),
+                                        style = MaterialTheme.typography.displaySmall)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Text(ex.name, style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.Bold)
+                                        Text(ex.category, style = MaterialTheme.typography.labelLarge,
+                                            color = catColor)
+                                    }
                                 }
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                MuscleChip(ex.primaryMuscle, catColor)
-                                ex.secondaryMuscles.split(",").filter { it.isNotBlank() }.take(2).forEach {
-                                    MuscleChip(it.trim(), catColor.copy(alpha = 0.6f))
+                                Spacer(Modifier.height(12.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    MuscleChip(ex.primaryMuscle, catColor)
+                                    ex.secondaryMuscles.split(",").filter { it.isNotBlank() }.take(2).forEach {
+                                        MuscleChip(it.trim(), catColor.copy(alpha = 0.6f))
+                                    }
                                 }
+                                Spacer(Modifier.height(8.dp))
+                                EquipmentBadge(ex.equipment)
                             }
-                            Spacer(Modifier.height(8.dp))
-                            EquipmentBadge(ex.equipment)
+                            ExercisePictogram(
+                                exerciseName = ex.name,
+                                color = catColor,
+                                size = 96.dp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                            )
                         }
                     }
                 }
