@@ -61,13 +61,20 @@ fun GarminSyncScreen(
         vm.onPermissionsResult(granted.containsAll(HealthConnectManager.PERMISSIONS))
     }
 
-    // For the manual "open app settings" fallback button
-    val appSettingsLauncher = rememberLauncherForActivityResult(
+    val fallbackLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { vm.checkStatus() }
 
-    fun openAppSettings() {
-        appSettingsLauncher.launch(
+    fun openHCSettings() {
+        listOf(
+            Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+                putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
+            },
+            Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS"),
+        ).forEach {
+            try { fallbackLauncher.launch(it); return } catch (_: Exception) {}
+        }
+        fallbackLauncher.launch(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.fromParts("package", context.packageName, null))
         )
@@ -199,12 +206,12 @@ fun GarminSyncScreen(
                             }
                         }
                         OutlinedButton(
-                            onClick = { openAppSettings() },
+                            onClick = { openHCSettings() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.Settings, null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Abrir ajustes de FitnessTracker")
+                            Text("Gestionar permisos de Health Connect")
                         }
                     }
                 }

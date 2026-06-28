@@ -1,5 +1,6 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -43,7 +44,7 @@ class GarminPermissionRationaleActivity : ComponentActivity() {
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(24.dp))
-                        Button(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = { setResult(Activity.RESULT_OK); finish() }, modifier = Modifier.fillMaxWidth()) {
                             Text("Entendido")
                         }
                     }

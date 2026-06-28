@@ -1,302 +1,499 @@
 package com.lordj.fitnessapp.ui.screens.exercises
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 enum class MovementType {
-    SQUAT, DEADLIFT, BENCH_PRESS, OVERHEAD_PRESS,
-    PULLDOWN, ROW, CURL, TRICEP_EXT,
-    PLANK, CRUNCH, HIP_THRUST, LEG_PRESS,
-    LEG_EXT, LEG_CURL, CALF_RAISE, LATERAL_RAISE,
-    LUNGE, CARDIO, GENERIC
+    SQUAT, DEADLIFT, BENCH_PRESS, OVERHEAD_PRESS, PULLDOWN, ROW,
+    CURL, TRICEP_EXT, PLANK, CRUNCH, HIP_THRUST, LEG_PRESS,
+    LEG_EXT, LEG_CURL, CALF_RAISE, LATERAL_RAISE, LUNGE, CARDIO, GENERIC
 }
 
 fun exerciseNameToMovement(name: String): MovementType {
-    val n = name.lowercase()
+    val lower = name.lowercase()
     return when {
-        "sentadilla" in n || "squat" in n -> MovementType.SQUAT
-        "peso muerto" in n || "deadlift" in n -> MovementType.DEADLIFT
-        "press de banca" in n || "press inclinado" in n || "aperturas" in n || "fondos" in n -> MovementType.BENCH_PRESS
-        "press militar" in n || "press de hombros" in n || "overhead press" in n -> MovementType.OVERHEAD_PRESS
-        "jalón" in n || "jalones" in n || "pulldown" in n || "dominada" in n -> MovementType.PULLDOWN
-        "remo" in n || "row" in n || "face pull" in n -> MovementType.ROW
-        ("curl" in n && "femoral" !in n) || ("bíceps" in n && "curl" !in n) -> MovementType.CURL
-        "tríceps" in n || "tricep" in n || "press francés" in n -> MovementType.TRICEP_EXT
-        "plancha" in n || "plank" in n -> MovementType.PLANK
-        "crunch" in n || "abdominal" in n || "elevación de piernas" in n -> MovementType.CRUNCH
-        "hip thrust" in n || "puente de glúteos" in n -> MovementType.HIP_THRUST
-        "prensa" in n || "leg press" in n -> MovementType.LEG_PRESS
-        ("extensión" in n || "extension" in n) && ("cuádr" in n || "cuad" in n || "quad" in n) -> MovementType.LEG_EXT
-        "curl femoral" in n || "leg curl" in n -> MovementType.LEG_CURL
-        "talón" in n || "gemelo" in n || "calf" in n -> MovementType.CALF_RAISE
-        ("lateral" in n && ("elevación" in n || "vuelo" in n)) -> MovementType.LATERAL_RAISE
-        "zancada" in n || "lunge" in n -> MovementType.LUNGE
-        "cardio" in n || "carrera" in n || "correr" in n || "bicicleta" in n -> MovementType.CARDIO
+        "sentadilla" in lower || "squat" in lower -> MovementType.SQUAT
+        "peso muerto" in lower || "deadlift" in lower || "rdl" in lower -> MovementType.DEADLIFT
+        "press banca" in lower || "bench" in lower || ("pecho" in lower && "press" in lower) -> MovementType.BENCH_PRESS
+        "press militar" in lower || "overhead" in lower || "ohp" in lower -> MovementType.OVERHEAD_PRESS
+        "jalón" in lower || "jalon" in lower || "pulldown" in lower || "polea alta" in lower -> MovementType.PULLDOWN
+        "remo" in lower || "row" in lower -> MovementType.ROW
+        "curl" in lower || "bícep" in lower || "bicep" in lower -> MovementType.CURL
+        "trícep" in lower || "tricep" in lower -> MovementType.TRICEP_EXT
+        "plancha" in lower || "plank" in lower -> MovementType.PLANK
+        "crunch" in lower || "abdominal" in lower -> MovementType.CRUNCH
+        "hip thrust" in lower || "puente" in lower -> MovementType.HIP_THRUST
+        "prensa" in lower || "leg press" in lower -> MovementType.LEG_PRESS
+        "extensión de pierna" in lower || "leg extension" in lower -> MovementType.LEG_EXT
+        "curl de pierna" in lower || "leg curl" in lower || "femoral" in lower -> MovementType.LEG_CURL
+        "gemelo" in lower || "pantorrilla" in lower || "calf" in lower -> MovementType.CALF_RAISE
+        "lateral" in lower && ("hombro" in lower || "elevación" in lower) -> MovementType.LATERAL_RAISE
+        "zancada" in lower || "lunge" in lower -> MovementType.LUNGE
+        "cardio" in lower || "carrera" in lower || "running" in lower || "bicicleta" in lower -> MovementType.CARDIO
         else -> MovementType.GENERIC
     }
 }
 
+// Joint indices in the flat FloatArray (15 joints × 2 coords = 30 values):
+// 0:head  1:neck  2:hip_center
+// 3:l_shou  4:l_elb  5:l_hand
+// 6:r_shou  7:r_elb  8:r_hand
+// 9:l_hip  10:l_knee  11:l_foot
+// 12:r_hip  13:r_knee  14:r_foot
+
+private data class Pose(val label: String, val j: FloatArray)
+
+private fun DrawScope.drawPose(pose: Pose, color: Color, sw: Float, hr: Float) {
+    val j = pose.j
+    val w = size.width; val h = size.height
+    fun o(i: Int) = Offset(j[i * 2] * w, j[i * 2 + 1] * h)
+    fun l(a: Int, b: Int) = drawLine(color, o(a), o(b), sw, cap = StrokeCap.Round)
+    drawCircle(color, hr, o(0))     // head
+    l(1, 2)                          // spine
+    l(1, 3); l(3, 4); l(4, 5)       // left arm
+    l(1, 6); l(6, 7); l(7, 8)       // right arm
+    l(2, 9); l(9, 10); l(10, 11)    // left leg
+    l(2, 12); l(12, 13); l(13, 14)  // right leg
+}
+
+private fun pose(label: String, vararg v: Float) = Pose(label, v.toFloatArray())
+
+private fun getPoses(movement: MovementType): List<Pose> = when (movement) {
+
+    MovementType.SQUAT -> listOf(
+        pose("De pie",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .20f,.52f,
+            .70f,.22f, .76f,.38f, .80f,.52f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Descenso",
+            .47f,.18f, .46f,.27f, .50f,.57f,
+            .27f,.29f, .22f,.44f, .20f,.60f,
+            .67f,.29f, .72f,.44f, .80f,.60f,
+            .36f,.59f, .25f,.76f, .22f,.93f,
+            .62f,.59f, .73f,.76f, .78f,.93f),
+        pose("Arriba",
+            .50f,.10f, .50f,.20f, .50f,.53f,
+            .30f,.23f, .24f,.39f, .20f,.53f,
+            .70f,.23f, .76f,.39f, .80f,.53f,
+            .38f,.55f, .37f,.77f, .36f,.96f,
+            .62f,.55f, .63f,.77f, .64f,.96f)
+    )
+
+    MovementType.DEADLIFT -> listOf(
+        pose("Inicial (hinge)",
+            .46f,.22f, .44f,.30f, .48f,.62f,
+            .25f,.33f, .22f,.50f, .22f,.67f,
+            .65f,.33f, .68f,.50f, .68f,.67f,
+            .35f,.63f, .32f,.80f, .30f,.96f,
+            .60f,.63f, .63f,.80f, .65f,.96f),
+        pose("Tirón",
+            .48f,.14f, .47f,.22f, .50f,.54f,
+            .28f,.26f, .24f,.42f, .22f,.57f,
+            .68f,.26f, .72f,.42f, .78f,.57f,
+            .37f,.55f, .34f,.75f, .32f,.95f,
+            .62f,.55f, .65f,.75f, .68f,.95f),
+        pose("De pie",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .22f,.54f,
+            .70f,.22f, .76f,.38f, .78f,.54f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.BENCH_PRESS -> listOf(
+        pose("Barra al pecho",
+            .50f,.20f, .50f,.30f, .50f,.58f,
+            .20f,.30f, .18f,.44f, .20f,.56f,
+            .80f,.30f, .82f,.44f, .80f,.56f,
+            .38f,.60f, .38f,.80f, .38f,.96f,
+            .62f,.60f, .62f,.80f, .62f,.96f),
+        pose("Subida",
+            .50f,.20f, .50f,.30f, .50f,.58f,
+            .20f,.30f, .16f,.36f, .18f,.46f,
+            .80f,.30f, .84f,.36f, .82f,.46f,
+            .38f,.60f, .38f,.80f, .38f,.96f,
+            .62f,.60f, .62f,.80f, .62f,.96f),
+        pose("Extensión",
+            .50f,.20f, .50f,.30f, .50f,.58f,
+            .20f,.30f, .18f,.20f, .20f,.10f,
+            .80f,.30f, .82f,.20f, .80f,.10f,
+            .38f,.60f, .38f,.80f, .38f,.96f,
+            .62f,.60f, .62f,.80f, .62f,.96f)
+    )
+
+    MovementType.OVERHEAD_PRESS -> listOf(
+        pose("Barra hombros",
+            .50f,.10f, .50f,.20f, .50f,.54f,
+            .28f,.22f, .24f,.36f, .24f,.22f,
+            .72f,.22f, .76f,.36f, .76f,.22f,
+            .38f,.56f, .37f,.76f, .36f,.96f,
+            .62f,.56f, .63f,.76f, .64f,.96f),
+        pose("Mitad",
+            .50f,.10f, .50f,.20f, .50f,.54f,
+            .28f,.22f, .22f,.18f, .22f,.06f,
+            .72f,.22f, .78f,.18f, .78f,.06f,
+            .38f,.56f, .37f,.76f, .36f,.96f,
+            .62f,.56f, .63f,.76f, .64f,.96f),
+        pose("Bloqueado",
+            .50f,.10f, .50f,.20f, .50f,.54f,
+            .28f,.22f, .28f,.12f, .50f,.02f,
+            .72f,.22f, .72f,.12f, .50f,.02f,
+            .38f,.56f, .37f,.76f, .36f,.96f,
+            .62f,.56f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.PULLDOWN -> listOf(
+        pose("Agarre arriba",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .20f,.12f, .18f,.06f, .30f,.03f,
+            .80f,.12f, .82f,.06f, .70f,.03f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Tirón",
+            .50f,.10f, .50f,.20f, .50f,.54f,
+            .24f,.20f, .20f,.12f, .28f,.04f,
+            .76f,.20f, .80f,.12f, .72f,.04f,
+            .38f,.56f, .37f,.76f, .36f,.96f,
+            .62f,.56f, .63f,.76f, .64f,.96f),
+        pose("Al pecho",
+            .50f,.10f, .50f,.20f, .50f,.54f,
+            .24f,.22f, .20f,.30f, .38f,.28f,
+            .76f,.22f, .80f,.30f, .62f,.28f,
+            .38f,.56f, .37f,.76f, .36f,.96f,
+            .62f,.56f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.ROW -> listOf(
+        pose("Inclinado",
+            .42f,.20f, .42f,.28f, .50f,.54f,
+            .25f,.26f, .22f,.40f, .22f,.56f,
+            .58f,.28f, .60f,.42f, .62f,.58f,
+            .38f,.56f, .34f,.74f, .32f,.94f,
+            .60f,.56f, .64f,.74f, .68f,.94f),
+        pose("Tirón",
+            .42f,.20f, .42f,.28f, .50f,.54f,
+            .25f,.26f, .22f,.32f, .26f,.40f,
+            .58f,.28f, .60f,.32f, .58f,.42f,
+            .38f,.56f, .34f,.74f, .32f,.94f,
+            .60f,.56f, .64f,.74f, .68f,.94f),
+        pose("Codo atrás",
+            .42f,.20f, .42f,.28f, .50f,.54f,
+            .25f,.26f, .20f,.28f, .24f,.36f,
+            .58f,.28f, .62f,.28f, .60f,.36f,
+            .38f,.56f, .34f,.74f, .32f,.94f,
+            .60f,.56f, .64f,.74f, .68f,.94f)
+    )
+
+    MovementType.CURL -> listOf(
+        pose("Brazos abajo",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.40f, .22f,.58f,
+            .70f,.22f, .76f,.40f, .78f,.58f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("A 90°",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .22f,.36f, .22f,.26f,
+            .70f,.22f, .78f,.36f, .78f,.26f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Curl completo",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .22f,.28f, .30f,.16f,
+            .70f,.22f, .78f,.28f, .70f,.16f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.TRICEP_EXT -> listOf(
+        pose("Codos arriba",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .26f,.12f, .34f,.04f,
+            .70f,.22f, .74f,.12f, .66f,.04f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Doblado",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .26f,.12f, .26f,.22f,
+            .70f,.22f, .74f,.12f, .74f,.22f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Extensión",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .26f,.12f, .34f,.04f,
+            .70f,.22f, .74f,.12f, .66f,.04f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.PLANK -> listOf(
+        pose("Posición",
+            .14f,.38f, .22f,.40f, .68f,.50f,
+            .24f,.36f, .24f,.50f, .24f,.64f,
+            .22f,.36f, .22f,.50f, .22f,.64f,
+            .60f,.50f, .72f,.52f, .84f,.56f,
+            .64f,.50f, .76f,.52f, .88f,.56f),
+        pose("Core activo",
+            .14f,.34f, .22f,.36f, .68f,.46f,
+            .24f,.32f, .24f,.46f, .24f,.60f,
+            .22f,.32f, .22f,.46f, .22f,.60f,
+            .60f,.46f, .72f,.48f, .84f,.52f,
+            .64f,.46f, .76f,.48f, .88f,.52f),
+        pose("Mantén",
+            .14f,.38f, .22f,.40f, .68f,.50f,
+            .24f,.36f, .24f,.50f, .24f,.64f,
+            .22f,.36f, .22f,.50f, .22f,.64f,
+            .60f,.50f, .72f,.52f, .84f,.56f,
+            .64f,.50f, .76f,.52f, .88f,.56f)
+    )
+
+    MovementType.CRUNCH -> listOf(
+        pose("Tumbado",
+            .50f,.28f, .50f,.38f, .50f,.64f,
+            .26f,.34f, .26f,.48f, .34f,.60f,
+            .74f,.34f, .74f,.48f, .66f,.60f,
+            .40f,.66f, .38f,.82f, .36f,.97f,
+            .60f,.66f, .62f,.82f, .64f,.97f),
+        pose("Sube",
+            .50f,.20f, .50f,.30f, .50f,.58f,
+            .26f,.26f, .30f,.38f, .38f,.48f,
+            .74f,.26f, .70f,.38f, .62f,.48f,
+            .40f,.60f, .38f,.78f, .36f,.96f,
+            .60f,.60f, .62f,.78f, .64f,.96f),
+        pose("Contracción",
+            .50f,.16f, .50f,.26f, .50f,.54f,
+            .26f,.22f, .32f,.30f, .40f,.40f,
+            .74f,.22f, .68f,.30f, .60f,.40f,
+            .40f,.56f, .38f,.74f, .36f,.94f,
+            .60f,.56f, .62f,.74f, .64f,.94f)
+    )
+
+    MovementType.HIP_THRUST -> listOf(
+        pose("Posición baja",
+            .50f,.26f, .50f,.36f, .50f,.62f,
+            .28f,.34f, .26f,.48f, .28f,.60f,
+            .72f,.34f, .74f,.48f, .72f,.60f,
+            .38f,.64f, .34f,.82f, .30f,.97f,
+            .62f,.64f, .66f,.82f, .70f,.97f),
+        pose("Empuje",
+            .50f,.20f, .50f,.30f, .50f,.54f,
+            .28f,.28f, .26f,.42f, .28f,.56f,
+            .72f,.28f, .74f,.42f, .72f,.56f,
+            .38f,.56f, .36f,.78f, .32f,.96f,
+            .62f,.56f, .64f,.78f, .68f,.96f),
+        pose("Arriba",
+            .50f,.16f, .50f,.26f, .50f,.46f,
+            .28f,.24f, .26f,.38f, .28f,.52f,
+            .72f,.24f, .74f,.38f, .72f,.52f,
+            .38f,.48f, .36f,.72f, .32f,.94f,
+            .62f,.48f, .64f,.72f, .68f,.94f)
+    )
+
+    MovementType.LUNGE -> listOf(
+        pose("De pie",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .20f,.52f,
+            .70f,.22f, .76f,.38f, .80f,.52f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Paso adelante",
+            .44f,.14f, .44f,.24f, .46f,.56f,
+            .26f,.26f, .20f,.40f, .18f,.54f,
+            .64f,.26f, .68f,.38f, .70f,.52f,
+            .34f,.58f, .28f,.74f, .22f,.92f,
+            .58f,.58f, .66f,.78f, .72f,.96f),
+        pose("Rodilla abajo",
+            .42f,.18f, .42f,.28f, .44f,.58f,
+            .24f,.28f, .18f,.40f, .16f,.54f,
+            .62f,.28f, .66f,.40f, .68f,.54f,
+            .32f,.60f, .22f,.76f, .18f,.94f,
+            .58f,.60f, .62f,.80f, .68f,.96f)
+    )
+
+    MovementType.LATERAL_RAISE -> listOf(
+        pose("Brazos abajo",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .26f,.38f, .22f,.54f,
+            .70f,.22f, .74f,.38f, .78f,.54f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("A 45°",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .18f,.30f, .08f,.40f,
+            .70f,.22f, .82f,.30f, .92f,.40f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("A 90°",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .10f,.22f, .02f,.22f,
+            .70f,.22f, .90f,.22f, .98f,.22f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f)
+    )
+
+    MovementType.CALF_RAISE -> listOf(
+        pose("Talones abajo",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .20f,.52f,
+            .70f,.22f, .76f,.38f, .80f,.52f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Subida",
+            .50f,.06f, .50f,.16f, .50f,.50f,
+            .30f,.20f, .24f,.36f, .20f,.50f,
+            .70f,.20f, .76f,.36f, .80f,.50f,
+            .38f,.52f, .37f,.72f, .38f,.90f,
+            .62f,.52f, .63f,.72f, .62f,.90f),
+        pose("Puntillas",
+            .50f,.04f, .50f,.14f, .50f,.48f,
+            .30f,.18f, .24f,.34f, .20f,.48f,
+            .70f,.18f, .76f,.34f, .80f,.48f,
+            .38f,.50f, .37f,.70f, .40f,.88f,
+            .62f,.50f, .63f,.70f, .60f,.88f)
+    )
+
+    MovementType.LEG_PRESS, MovementType.LEG_EXT, MovementType.LEG_CURL -> listOf(
+        pose("Piernas dobladas",
+            .50f,.10f, .50f,.20f, .50f,.50f,
+            .30f,.22f, .26f,.36f, .30f,.48f,
+            .70f,.22f, .74f,.36f, .70f,.48f,
+            .36f,.52f, .26f,.68f, .30f,.84f,
+            .64f,.52f, .74f,.68f, .70f,.84f),
+        pose("Empuje",
+            .50f,.10f, .50f,.20f, .50f,.50f,
+            .30f,.22f, .26f,.36f, .30f,.48f,
+            .70f,.22f, .74f,.36f, .70f,.48f,
+            .36f,.52f, .22f,.58f, .14f,.68f,
+            .64f,.52f, .78f,.58f, .86f,.68f),
+        pose("Extensión",
+            .50f,.10f, .50f,.20f, .50f,.50f,
+            .30f,.22f, .26f,.36f, .30f,.48f,
+            .70f,.22f, .74f,.36f, .70f,.48f,
+            .36f,.52f, .20f,.52f, .10f,.56f,
+            .64f,.52f, .80f,.52f, .90f,.56f)
+    )
+
+    MovementType.CARDIO -> listOf(
+        pose("Impulso",
+            .52f,.08f, .52f,.18f, .54f,.50f,
+            .34f,.22f, .28f,.36f, .32f,.50f,
+            .70f,.22f, .76f,.30f, .72f,.42f,
+            .42f,.52f, .50f,.72f, .44f,.92f,
+            .64f,.52f, .60f,.68f, .66f,.86f),
+        pose("Vuelo",
+            .50f,.06f, .50f,.16f, .52f,.48f,
+            .32f,.20f, .20f,.28f, .18f,.42f,
+            .72f,.20f, .84f,.24f, .82f,.36f,
+            .40f,.50f, .32f,.68f, .26f,.88f,
+            .64f,.50f, .68f,.70f, .74f,.90f),
+        pose("Aterrizaje",
+            .50f,.10f, .50f,.20f, .52f,.50f,
+            .34f,.22f, .28f,.36f, .22f,.50f,
+            .70f,.22f, .76f,.32f, .82f,.44f,
+            .40f,.52f, .36f,.72f, .32f,.92f,
+            .64f,.52f, .68f,.72f, .72f,.92f)
+    )
+
+    else -> listOf(
+        pose("Inicio",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .20f,.52f,
+            .70f,.22f, .76f,.38f, .80f,.52f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Movimiento",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .20f,.28f, .16f,.40f,
+            .70f,.22f, .80f,.28f, .84f,.40f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f),
+        pose("Final",
+            .50f,.08f, .50f,.18f, .50f,.52f,
+            .30f,.22f, .24f,.38f, .20f,.52f,
+            .70f,.22f, .76f,.38f, .80f,.52f,
+            .38f,.54f, .37f,.76f, .36f,.96f,
+            .62f,.54f, .63f,.76f, .64f,.96f)
+    )
+}
+
 @Composable
-fun ExercisePictogram(
+fun ExerciseStepsCard(
     exerciseName: String,
     color: Color,
-    size: Dp = 110.dp,
     modifier: Modifier = Modifier
 ) {
-    val movement = exerciseNameToMovement(exerciseName)
-    Canvas(modifier = modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val sw = w * 0.055f
-        val hr = w * 0.075f
+    val poses = getPoses(exerciseNameToMovement(exerciseName))
 
-        fun p(x: Float, y: Float) = Offset(x * w, y * h)
-        fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(
-            color = color, start = p(x1, y1), end = p(x2, y2),
-            strokeWidth = sw, cap = StrokeCap.Round
-        )
-        fun head(x: Float, y: Float) = drawCircle(color = color, radius = hr, center = p(x, y))
-
-        when (movement) {
-            MovementType.SQUAT -> {
-                // Side view deep squat
-                head(0.38f, 0.10f)
-                line(0.38f, 0.17f, 0.52f, 0.46f) // torso leaning forward
-                line(0.44f, 0.29f, 0.22f, 0.38f) // arms forward
-                line(0.22f, 0.38f, 0.20f, 0.46f)
-                line(0.52f, 0.46f, 0.36f, 0.68f) // thigh
-                line(0.36f, 0.68f, 0.50f, 0.84f) // shin
-                line(0.50f, 0.84f, 0.60f, 0.86f) // foot
-                line(0.52f, 0.46f, 0.40f, 0.66f) // second leg slightly behind
-                line(0.40f, 0.66f, 0.54f, 0.82f)
-            }
-            MovementType.DEADLIFT -> {
-                // Side view hip hinge / start position
-                head(0.62f, 0.11f)
-                line(0.55f, 0.18f, 0.30f, 0.30f) // horizontal back
-                line(0.30f, 0.30f, 0.36f, 0.56f) // front thigh
-                line(0.36f, 0.56f, 0.36f, 0.80f) // shin
-                line(0.36f, 0.80f, 0.52f, 0.84f) // foot
-                line(0.44f, 0.24f, 0.44f, 0.65f) // arms hanging
-                line(0.36f, 0.65f, 0.52f, 0.65f) // bar
-                drawCircle(color, hr * 0.6f, p(0.36f, 0.65f))
-                drawCircle(color, hr * 0.6f, p(0.52f, 0.65f))
-            }
-            MovementType.BENCH_PRESS -> {
-                // Side view lying on bench
-                line(0.05f, 0.72f, 0.90f, 0.72f) // bench
-                line(0.62f, 0.72f, 0.62f, 0.88f) // bench leg
-                head(0.80f, 0.60f)
-                line(0.72f, 0.67f, 0.20f, 0.67f) // body
-                line(0.20f, 0.67f, 0.16f, 0.82f) // legs bent at knees
-                line(0.16f, 0.82f, 0.28f, 0.88f)
-                line(0.55f, 0.67f, 0.46f, 0.42f) // upper arm
-                line(0.46f, 0.42f, 0.58f, 0.36f) // forearm to bar
-                line(0.40f, 0.36f, 0.72f, 0.36f) // bar
-            }
-            MovementType.OVERHEAD_PRESS -> {
-                // Standing press
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.50f) // torso
-                line(0.50f, 0.22f, 0.26f, 0.14f) // left arm up
-                line(0.50f, 0.22f, 0.74f, 0.14f) // right arm up
-                line(0.22f, 0.10f, 0.78f, 0.10f) // bar
-                line(0.50f, 0.50f, 0.35f, 0.74f) // left leg
-                line(0.35f, 0.74f, 0.31f, 0.90f)
-                line(0.50f, 0.50f, 0.65f, 0.74f) // right leg
-                line(0.65f, 0.74f, 0.69f, 0.90f)
-            }
-            MovementType.PULLDOWN -> {
-                // Seated, arms overhead pulling down
-                head(0.50f, 0.13f)
-                line(0.50f, 0.20f, 0.52f, 0.50f) // torso slight lean
-                line(0.50f, 0.28f, 0.24f, 0.14f) // left arm to bar
-                line(0.50f, 0.28f, 0.76f, 0.14f) // right arm to bar
-                line(0.18f, 0.12f, 0.82f, 0.12f) // bar
-                line(0.50f, 0.50f, 0.28f, 0.50f) // left thigh seated
-                line(0.50f, 0.50f, 0.72f, 0.50f) // right thigh
-                line(0.28f, 0.50f, 0.26f, 0.74f) // left shin
-                line(0.72f, 0.50f, 0.74f, 0.74f) // right shin
-            }
-            MovementType.ROW -> {
-                // Bent over row
-                head(0.65f, 0.12f)
-                line(0.58f, 0.19f, 0.30f, 0.32f) // back horizontal (bent over)
-                line(0.30f, 0.32f, 0.34f, 0.60f) // thigh
-                line(0.34f, 0.60f, 0.34f, 0.82f) // shin
-                line(0.34f, 0.82f, 0.48f, 0.86f) // foot
-                line(0.44f, 0.26f, 0.40f, 0.56f) // upper arm pulling
-                line(0.40f, 0.56f, 0.30f, 0.58f) // forearm toward body
-                line(0.28f, 0.58f, 0.40f, 0.58f) // weight at end
-                drawCircle(color, hr * 0.5f, p(0.28f, 0.58f))
-            }
-            MovementType.CURL -> {
-                // Standing bicep curl, arm bent
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.50f)
-                line(0.50f, 0.26f, 0.30f, 0.36f) // left arm relaxed
-                line(0.30f, 0.36f, 0.28f, 0.52f)
-                line(0.50f, 0.26f, 0.70f, 0.32f) // right upper arm
-                line(0.70f, 0.32f, 0.64f, 0.16f) // forearm curled up (90°)
-                drawCircle(color, hr * 0.55f, p(0.62f, 0.14f)) // dumbbell
-                line(0.50f, 0.50f, 0.36f, 0.74f)
-                line(0.36f, 0.74f, 0.32f, 0.90f)
-                line(0.50f, 0.50f, 0.64f, 0.74f)
-                line(0.64f, 0.74f, 0.68f, 0.90f)
-            }
-            MovementType.TRICEP_EXT -> {
-                // Standing overhead tricep extension
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.50f)
-                line(0.50f, 0.22f, 0.42f, 0.11f) // left upper arm up
-                line(0.42f, 0.11f, 0.48f, 0.26f) // forearm bent behind head
-                line(0.50f, 0.22f, 0.58f, 0.11f) // right upper arm
-                line(0.58f, 0.11f, 0.52f, 0.26f)
-                drawCircle(color, hr * 0.5f, p(0.50f, 0.08f))
-                line(0.50f, 0.50f, 0.36f, 0.74f)
-                line(0.36f, 0.74f, 0.32f, 0.90f)
-                line(0.50f, 0.50f, 0.64f, 0.74f)
-                line(0.64f, 0.74f, 0.68f, 0.90f)
-            }
-            MovementType.PLANK -> {
-                // Horizontal plank on forearms
-                head(0.82f, 0.40f)
-                line(0.74f, 0.47f, 0.18f, 0.47f) // body horizontal
-                line(0.64f, 0.47f, 0.60f, 0.62f) // right forearm
-                line(0.60f, 0.62f, 0.44f, 0.62f) // forearm on ground
-                line(0.18f, 0.47f, 0.16f, 0.62f) // feet
-                line(0.16f, 0.62f, 0.24f, 0.65f)
-                line(0.08f, 0.66f, 0.92f, 0.66f) // ground line
-            }
-            MovementType.CRUNCH -> {
-                // Crunching: on floor, upper body raised
-                head(0.75f, 0.40f)
-                line(0.67f, 0.47f, 0.38f, 0.56f) // torso angled
-                line(0.38f, 0.56f, 0.22f, 0.56f) // lower body flat
-                line(0.22f, 0.56f, 0.14f, 0.74f) // thighs up (knees bent)
-                line(0.14f, 0.74f, 0.24f, 0.84f) // feet
-                line(0.58f, 0.46f, 0.38f, 0.46f) // arms reaching forward
-                line(0.08f, 0.86f, 0.92f, 0.86f) // ground
-            }
-            MovementType.HIP_THRUST -> {
-                // Back on bench, hips raised, feet on floor
-                line(0.55f, 0.64f, 0.92f, 0.64f) // bench
-                head(0.80f, 0.53f)
-                line(0.73f, 0.60f, 0.42f, 0.60f) // torso angled down from bench
-                line(0.42f, 0.60f, 0.30f, 0.40f) // thigh going up (hips raised)
-                line(0.30f, 0.40f, 0.20f, 0.60f) // shin going down
-                line(0.20f, 0.60f, 0.28f, 0.68f) // foot flat
-                line(0.08f, 0.86f, 0.55f, 0.86f) // ground
-                line(0.20f, 0.68f, 0.20f, 0.86f)
-            }
-            MovementType.LEG_PRESS -> {
-                // Seated in leg press machine
-                head(0.72f, 0.18f)
-                line(0.65f, 0.25f, 0.65f, 0.60f) // back reclined
-                line(0.65f, 0.60f, 0.22f, 0.58f) // thighs horizontal to platform
-                line(0.22f, 0.58f, 0.10f, 0.38f) // shins to pressing plate
-                line(0.08f, 0.32f, 0.08f, 0.64f) // platform vertical
-                line(0.08f, 0.48f, 0.20f, 0.48f) // footplate
-            }
-            MovementType.LEG_EXT -> {
-                // Seated, one leg extended horizontally
-                head(0.50f, 0.12f)
-                line(0.50f, 0.19f, 0.50f, 0.52f) // torso seated
-                line(0.50f, 0.52f, 0.14f, 0.52f) // thigh on seat
-                line(0.50f, 0.52f, 0.76f, 0.52f) // other thigh
-                // Extended leg
-                line(0.14f, 0.52f, 0.06f, 0.52f) // thigh further
-                line(0.06f, 0.52f, 0.08f, 0.76f) // shin hanging (resting)
-                // Leg being extended
-                line(0.76f, 0.52f, 0.92f, 0.44f) // shin extended up
-                drawCircle(color, hr * 0.5f, p(0.92f, 0.42f)) // ankle pad
-                // Seat
-                line(0.08f, 0.84f, 0.92f, 0.84f)
-            }
-            MovementType.LEG_CURL -> {
-                // Lying face down, leg curled
-                head(0.14f, 0.40f)
-                line(0.21f, 0.46f, 0.80f, 0.46f) // body prone
-                line(0.80f, 0.46f, 0.68f, 0.46f) // right thigh flat
-                line(0.80f, 0.46f, 0.62f, 0.46f)
-                line(0.62f, 0.46f, 0.58f, 0.26f) // right shin curled up
-                drawCircle(color, hr * 0.5f, p(0.58f, 0.24f)) // ankle pad
-                line(0.68f, 0.46f, 0.65f, 0.52f) // second leg relaxed
-                line(0.65f, 0.52f, 0.62f, 0.64f)
-                line(0.08f, 0.56f, 0.92f, 0.56f) // bench/ground
-            }
-            MovementType.CALF_RAISE -> {
-                // Standing on tiptoes
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.50f) // torso
-                line(0.50f, 0.27f, 0.30f, 0.38f) // arms (holding support)
-                line(0.50f, 0.27f, 0.70f, 0.38f)
-                line(0.50f, 0.50f, 0.40f, 0.72f) // left thigh
-                line(0.40f, 0.72f, 0.38f, 0.84f) // left shin
-                line(0.50f, 0.50f, 0.60f, 0.72f) // right thigh
-                line(0.60f, 0.72f, 0.62f, 0.84f) // right shin
-                // Tiptoes (raised heels)
-                line(0.38f, 0.84f, 0.35f, 0.78f) // heel up
-                line(0.35f, 0.78f, 0.42f, 0.78f) // ball of foot on ground
-                line(0.62f, 0.84f, 0.65f, 0.78f)
-                line(0.65f, 0.78f, 0.58f, 0.78f)
-                line(0.20f, 0.90f, 0.80f, 0.90f) // ground
-            }
-            MovementType.LATERAL_RAISE -> {
-                // Standing, arms raised laterally to shoulder height
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.50f)
-                line(0.50f, 0.26f, 0.16f, 0.40f) // left arm raised to side
-                line(0.50f, 0.26f, 0.84f, 0.40f) // right arm raised to side
-                drawCircle(color, hr * 0.5f, p(0.14f, 0.40f))
-                drawCircle(color, hr * 0.5f, p(0.86f, 0.40f))
-                line(0.50f, 0.50f, 0.36f, 0.74f)
-                line(0.36f, 0.74f, 0.32f, 0.90f)
-                line(0.50f, 0.50f, 0.64f, 0.74f)
-                line(0.64f, 0.74f, 0.68f, 0.90f)
-            }
-            MovementType.LUNGE -> {
-                // Side view lunge
-                head(0.45f, 0.10f)
-                line(0.45f, 0.17f, 0.46f, 0.48f) // torso upright
-                line(0.46f, 0.28f, 0.30f, 0.38f) // arms
-                line(0.46f, 0.28f, 0.62f, 0.38f)
-                line(0.46f, 0.48f, 0.24f, 0.66f) // front leg thigh
-                line(0.24f, 0.66f, 0.21f, 0.84f) // front shin
-                line(0.21f, 0.84f, 0.34f, 0.87f) // front foot
-                line(0.46f, 0.48f, 0.65f, 0.62f) // back leg thigh
-                line(0.65f, 0.62f, 0.68f, 0.85f) // back shin
-                line(0.68f, 0.85f, 0.78f, 0.87f) // back foot
-            }
-            MovementType.CARDIO -> {
-                // Running pose
-                head(0.55f, 0.09f)
-                line(0.55f, 0.16f, 0.50f, 0.48f) // torso (forward lean)
-                line(0.53f, 0.26f, 0.33f, 0.16f) // left arm forward+up
-                line(0.53f, 0.26f, 0.68f, 0.38f) // right arm back
-                line(0.50f, 0.48f, 0.62f, 0.66f) // left leg back
-                line(0.62f, 0.66f, 0.72f, 0.52f) // shin kick back
-                line(0.50f, 0.48f, 0.34f, 0.62f) // right leg forward
-                line(0.34f, 0.62f, 0.27f, 0.80f) // shin down
-                line(0.27f, 0.80f, 0.36f, 0.84f) // foot
-            }
-            MovementType.GENERIC -> {
-                // Simple standing figure
-                head(0.50f, 0.09f)
-                line(0.50f, 0.16f, 0.50f, 0.52f)
-                line(0.50f, 0.26f, 0.28f, 0.42f)
-                line(0.50f, 0.26f, 0.72f, 0.42f)
-                line(0.50f, 0.52f, 0.35f, 0.74f)
-                line(0.35f, 0.74f, 0.31f, 0.90f)
-                line(0.50f, 0.52f, 0.65f, 0.74f)
-                line(0.65f, 0.74f, 0.69f, 0.90f)
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Técnica paso a paso",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                poses.forEachIndexed { idx, p ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.65f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(color.copy(alpha = 0.08f))
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                drawPose(p, color, size.width * 0.055f, size.width * 0.082f)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(color.copy(alpha = 0.18f))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    "${idx + 1}",
+                                    color = color,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            p.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
         }
     }
