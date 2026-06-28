@@ -35,5 +35,9 @@ class WorkoutRepository(
     }
 
     suspend fun insertWorkout(workout: Workout): Long = workoutDao.insertWorkout(workout)
+    suspend fun updateWorkout(workout: Workout) = workoutDao.updateWorkout(workout)
+    suspend fun deleteWorkout(workout: Workout) = workoutDao.deleteWorkout(workout)
+    suspend fun insertWorkoutExercise(we: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(we)
+    suspend fun deleteWorkoutExercise(we: WorkoutExercise) = workoutDao.deleteWorkoutExercise(we)
     suspend fun deleteSession(session: WorkoutSession) = workoutSessionDao.deleteSession(session)
 }

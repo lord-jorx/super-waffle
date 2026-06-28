@@ -11,31 +11,49 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFF8F00),
-    onPrimary = Color.Black,
-    primaryContainer = Color(0xFFFF6D00),
-    secondary = Color(0xFF66BB6A),
-    tertiary = Color(0xFF42A5F5),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFF2C2C2C),
-    onBackground = Color(0xFFEEEEEE),
-    onSurface = Color(0xFFEEEEEE),
-    error = Color(0xFFEF5350)
+    primary = Indigo400,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF312E81),
+    onPrimaryContainer = Indigo400,
+    secondary = Emerald500,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF064E3B),
+    onSecondaryContainer = Emerald300,
+    tertiary = Amber500,
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF78350F),
+    onTertiaryContainer = Color(0xFFFDE68A),
+    background = Slate900,
+    surface = Slate800,
+    surfaceVariant = Slate700,
+    onBackground = Color(0xFFF8FAFC),
+    onSurface = Color(0xFFE2E8F0),
+    onSurfaceVariant = Color(0xFF94A3B8),
+    error = Rose500,
+    outline = Color(0xFF475569)
 )
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFFE65100),
+    primary = Indigo500,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFCC80),
-    secondary = Color(0xFF2E7D32),
-    tertiary = Color(0xFF1565C0),
-    background = Color(0xFFF5F5F5),
+    primaryContainer = Color(0xFFE0E7FF),
+    onPrimaryContainer = Indigo700,
+    secondary = Emerald500,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFD1FAE5),
+    onSecondaryContainer = Color(0xFF064E3B),
+    tertiary = Amber500,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF78350F),
+    background = Slate100,
     surface = Color.White,
-    surfaceVariant = Color(0xFFF0F0F0),
-    onBackground = Color(0xFF1A1A1A),
-    onSurface = Color(0xFF1A1A1A),
-    error = Color(0xFFB00020)
+    surfaceVariant = Color(0xFFF8FAFC),
+    onBackground = Color(0xFF0F172A),
+    onSurface = Color(0xFF1E293B),
+    onSurfaceVariant = Color(0xFF475569),
+    error = Rose500,
+    outline = Color(0xFFCBD5E1)
 )
 
 @Composable
@@ -48,7 +66,7 @@ fun FitnessTrackerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colors.primary.toArgb()
+            window.statusBarColor = colors.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

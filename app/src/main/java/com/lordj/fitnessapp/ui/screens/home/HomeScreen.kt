@@ -34,7 +34,8 @@ fun HomeScreen(
     onNavigateToWorkouts: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onStartWorkout: (Long) -> Unit,
-    onNavigateToGarmin: () -> Unit = {}
+    onNavigateToGarmin: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val app = LocalContext.current.applicationContext as FitnessApp
     val vm: WorkoutViewModel = viewModel(factory = WorkoutViewModel.Factory(app.workoutRepository))
@@ -64,10 +65,22 @@ fun HomeScreen(
                     .padding(20.dp)
             ) {
                 Column {
-                    Text(greeting(), style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
-                    Text("¡A entrenar!", style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(greeting(), style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                            Text("¡A entrenar!", style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                        }
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(Icons.Filled.Settings, "Ajustes",
+                                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         StatChip("🔥 $streak días", "Racha")

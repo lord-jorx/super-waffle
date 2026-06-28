@@ -27,7 +27,8 @@ import com.lordj.fitnessapp.ui.viewmodel.WorkoutViewModel
 @Composable
 fun WorkoutListScreen(
     padding: PaddingValues,
-    onWorkoutClick: (Long) -> Unit
+    onWorkoutClick: (Long) -> Unit,
+    onCreateWorkout: () -> Unit = {}
 ) {
     val app = LocalContext.current.applicationContext as FitnessApp
     val vm: WorkoutViewModel = viewModel(factory = WorkoutViewModel.Factory(app.workoutRepository))
@@ -40,6 +41,11 @@ fun WorkoutListScreen(
         modifier = Modifier.padding(padding),
         topBar = {
             TopAppBar(title = { Text("Rutinas", fontWeight = FontWeight.Bold) })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreateWorkout) {
+                Icon(Icons.Filled.Add, "Crear rutina")
+            }
         }
     ) { inner ->
         LazyColumn(

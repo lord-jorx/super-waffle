@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.health.connect)
+    implementation(libs.coil.compose)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)

@@ -1,5 +1,7 @@
 package com.lordj.fitnessapp.ui.screens.exercises
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,8 +32,13 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
+fun ExerciseDetailScreen(
+    exerciseId: Long,
+    onBack: () -> Unit,
+    onQuickTrain: ((Long) -> Unit)? = null
+) {
     val app = LocalContext.current.applicationContext as FitnessApp
+    val context = LocalContext.current
     val vm: ExerciseViewModel = viewModel(factory = ExerciseViewModel.Factory(app.exerciseRepository))
 
     LaunchedEffect(exerciseId) { vm.loadExercise(exerciseId) }
@@ -64,20 +72,41 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
                 },
+                actions = {
+                    exercise?.let { ex ->
+                        IconButton(onClick = {
+                            val query = Uri.encode("${ex.nameEn.ifBlank { ex.name }} exercise tutorial")
+                            val uri = Uri.parse("https://www.youtube.com/results?search_query=$query")
+                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        }) {
+                            Icon(Icons.Filled.PlayCircle, "Ver demostración en YouTube")
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = catColor.copy(alpha = 0.1f)
                 )
             )
+        },
+        floatingActionButton = {
+            if (onQuickTrain != null && exercise != null) {
+                ExtendedFloatingActionButton(
+                    onClick = { onQuickTrain(exerciseId) },
+                    icon = { Icon(Icons.Filled.FitnessCenter, null) },
+                    text = { Text("Entrenar solo") },
+                    containerColor = catColor,
+                    contentColor = Color.White
+                )
+            }
         }
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             exercise?.let { ex ->
                 item {
-                    // Header card
                     Box(
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                             .background(catColor.copy(alpha = 0.12f)).padding(20.dp)
@@ -107,13 +136,22 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
                     }
                 }
 
+                // Muscle activation visualization
+                item {
+                    MuscleActivationCard(
+                        primaryMuscle = ex.primaryMuscle,
+                        secondaryMuscles = ex.secondaryMuscles,
+                        color = catColor
+                    )
+                }
+
                 // Stats row
                 if (maxWeight > 0) {
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            StatBox("🏆 Máx Peso", "${maxWeight} kg", Modifier.weight(1f))
-                            StatBox("📊 Sesiones", "${sets.map { it.sessionId }.distinct().size}", Modifier.weight(1f))
-                            StatBox("🔢 Series Total", "${sets.filter { !it.isWarmup }.size}", Modifier.weight(1f))
+                            StatBox("Máx Peso", "${maxWeight} kg", Modifier.weight(1f))
+                            StatBox("Sesiones", "${sets.map { it.sessionId }.distinct().size}", Modifier.weight(1f))
+                            StatBox("Series", "${sets.filter { !it.isWarmup }.size}", Modifier.weight(1f))
                         }
                     }
                 }
@@ -132,11 +170,18 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ex.executionSteps.split("\n").filter { it.isNotBlank() }.forEach { step ->
-                                    Row {
-                                        Text(step, style = MaterialTheme.typography.bodyMedium)
+                                ex.executionSteps.split("\n").filter { it.isNotBlank() }
+                                    .forEachIndexed { i, step ->
+                                        Row(verticalAlignment = Alignment.Top) {
+                                            Text("${i + 1}.",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = catColor,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.width(24.dp))
+                                            Text(step.trimStart { it.isDigit() || it == '.' || it == ' ' },
+                                                style = MaterialTheme.typography.bodyMedium)
+                                        }
                                     }
-                                }
                             }
                         }
                     }
@@ -162,7 +207,23 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
                     }
                 }
 
-                // Progress chart
+                // YouTube button
+                item {
+                    OutlinedButton(
+                        onClick = {
+                            val query = Uri.encode("${ex.nameEn.ifBlank { ex.name }} exercise tutorial")
+                            val uri = Uri.parse("https://www.youtube.com/results?search_query=$query")
+                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.PlayCircle, null, modifier = Modifier.size(20.dp),
+                            tint = Color(0xFFFF0000))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ver demostración en YouTube")
+                    }
+                }
+
                 if (progressData.isNotEmpty()) {
                     item {
                         SectionTitle("Progresión de Peso")
@@ -186,16 +247,12 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
                     }
                 }
 
-                // Recent logs
                 val recentSets = sets.filter { !it.isWarmup }.take(20)
                 if (recentSets.isNotEmpty()) {
-                    item {
-                        SectionTitle("Historial reciente")
-                    }
+                    item { SectionTitle("Historial reciente") }
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                // Header
                                 Row(modifier = Modifier.fillMaxWidth()) {
                                     Text("Fecha", Modifier.weight(2f), style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary)
@@ -231,6 +288,47 @@ fun ExerciseDetailScreen(exerciseId: Long, onBack: () -> Unit) {
 }
 
 @Composable
+private fun MuscleActivationCard(primaryMuscle: String, secondaryMuscles: String, color: Color) {
+    val secondaries = secondaryMuscles.split(",").filter { it.isNotBlank() }.map { it.trim() }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Músculos trabajados",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold)
+
+            MuscleBar(muscle = primaryMuscle, fraction = 1f, color = color, label = "Principal")
+
+            secondaries.take(3).forEachIndexed { i, muscle ->
+                val frac = when (i) { 0 -> 0.6f; 1 -> 0.4f; else -> 0.25f }
+                MuscleBar(muscle = muscle, fraction = frac, color = color.copy(alpha = 0.6f), label = "Secundario")
+            }
+        }
+    }
+}
+
+@Composable
+private fun MuscleBar(muscle: String, fraction: Float, color: Color, label: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(muscle, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+            Text(label, style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+        }
+        LinearProgressIndicator(
+            progress = { fraction },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
+            color = color,
+            trackColor = color.copy(alpha = 0.15f),
+            strokeCap = StrokeCap.Round
+        )
+    }
+}
+
+@Composable
 private fun MuscleChip(label: String, color: Color) {
     Box(
         modifier = Modifier.clip(RoundedCornerShape(50))
@@ -245,9 +343,9 @@ private fun MuscleChip(label: String, color: Color) {
 private fun StatBox(label: String, value: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(label, style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
     }
 }

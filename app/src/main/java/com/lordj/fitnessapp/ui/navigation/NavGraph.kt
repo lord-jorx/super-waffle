@@ -12,12 +12,15 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseDetailScreen
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseListScreen
+import com.lordj.fitnessapp.ui.screens.exercises.QuickExerciseScreen
 import com.lordj.fitnessapp.ui.screens.export.ExportScreen
 import com.lordj.fitnessapp.ui.screens.garmin.GarminSyncScreen
 import com.lordj.fitnessapp.ui.screens.history.HistoryScreen
 import com.lordj.fitnessapp.ui.screens.home.HomeScreen
 import com.lordj.fitnessapp.ui.screens.progress.ProgressScreen
+import com.lordj.fitnessapp.ui.screens.settings.SettingsScreen
 import com.lordj.fitnessapp.ui.screens.workouts.ActiveWorkoutScreen
+import com.lordj.fitnessapp.ui.screens.workouts.WorkoutCreateScreen
 import com.lordj.fitnessapp.ui.screens.workouts.WorkoutDetailScreen
 import com.lordj.fitnessapp.ui.screens.workouts.WorkoutListScreen
 
@@ -37,8 +40,13 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object ActiveWorkout : Screen("active_workout/{workoutId}", "", Icons.Filled.PlayArrow) {
         fun createRoute(id: Long) = "active_workout/$id"
     }
+    object QuickExercise : Screen("quick_exercise/{exerciseId}", "", Icons.Filled.FitnessCenter) {
+        fun createRoute(id: Long) = "quick_exercise/$id"
+    }
     object Export : Screen("export", "Exportar", Icons.Filled.FileDownload)
     object Garmin : Screen("garmin", "Garmin", Icons.Filled.Watch)
+    object Settings : Screen("settings", "Ajustes", Icons.Filled.Settings)
+    object WorkoutCreate : Screen("workout_create", "Nueva Rutina", Icons.Filled.Add)
 }
 
 val bottomNavItems = listOf(Screen.Home, Screen.Exercises, Screen.Workouts, Screen.Progress, Screen.History)
@@ -80,7 +88,8 @@ fun FitnessNavGraph() {
                     onNavigateToWorkouts = { navController.navigate(Screen.Workouts.route) },
                     onNavigateToHistory = { navController.navigate(Screen.History.route) },
                     onStartWorkout = { id -> navController.navigate(Screen.ActiveWorkout.createRoute(id)) },
-                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) }
+                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) },
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
                 )
             }
             composable(Screen.Exercises.route) {
@@ -96,13 +105,35 @@ fun FitnessNavGraph() {
                 val exerciseId = backStack.arguments?.getLong("exerciseId") ?: return@composable
                 ExerciseDetailScreen(
                     exerciseId = exerciseId,
+                    onBack = { navController.popBackStack() },
+                    onQuickTrain = { id -> navController.navigate(Screen.QuickExercise.createRoute(id)) }
+                )
+            }
+            composable(
+                Screen.QuickExercise.route,
+                arguments = listOf(navArgument("exerciseId") { type = NavType.LongType })
+            ) { backStack ->
+                val exerciseId = backStack.arguments?.getLong("exerciseId") ?: return@composable
+                QuickExerciseScreen(
+                    exerciseId = exerciseId,
                     onBack = { navController.popBackStack() }
                 )
             }
             composable(Screen.Workouts.route) {
                 WorkoutListScreen(
                     padding = padding,
-                    onWorkoutClick = { id -> navController.navigate(Screen.WorkoutDetail.createRoute(id)) }
+                    onWorkoutClick = { id -> navController.navigate(Screen.WorkoutDetail.createRoute(id)) },
+                    onCreateWorkout = { navController.navigate(Screen.WorkoutCreate.route) }
+                )
+            }
+            composable(Screen.WorkoutCreate.route) {
+                WorkoutCreateScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = {
+                        navController.navigate(Screen.Workouts.route) {
+                            popUpTo(Screen.Workouts.route) { inclusive = true }
+                        }
+                    }
                 )
             }
             composable(
@@ -147,6 +178,12 @@ fun FitnessNavGraph() {
                 GarminSyncScreen(
                     padding = padding,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) }
                 )
             }
         }
