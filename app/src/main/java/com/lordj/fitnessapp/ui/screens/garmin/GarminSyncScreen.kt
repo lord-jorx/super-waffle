@@ -1,13 +1,11 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,22 +55,8 @@ fun GarminSyncScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Proper Health Connect permission contract — uses the SDK dialog (required for Samsung Android 16+)
     val requestPermissions = rememberLauncherForActivityResult(
-        contract = remember(context) {
-            runCatching {
-                HealthConnectClient.getOrCreate(context).permissionController
-                    .createRequestPermissionResultContract()
-            }.getOrElse {
-                // Fallback when HC client can't be created (e.g. not installed yet)
-                object : ActivityResultContract<Set<String>, Set<String>>() {
-                    override fun createIntent(ctx: Context, input: Set<String>) =
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", ctx.packageName, null))
-                    override fun parseResult(resultCode: Int, intent: Intent?) = emptySet()
-                }
-            }
-        }
+        PermissionController.createRequestPermissionResultContract()
     ) { granted ->
         vm.onPermissionsResult(granted.containsAll(HealthConnectManager.PERMISSIONS))
     }
