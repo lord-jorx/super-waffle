@@ -92,10 +92,6 @@ fun HomeScreen(
         }
 
         item {
-            GarminSyncCard(onClick = onNavigateToGarmin)
-        }
-
-        item {
             Text("Entrenamiento sugerido", style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold)
         }
@@ -145,38 +141,6 @@ fun HomeScreen(
             items(recentSessions.take(5)) { session ->
                 SessionCard(session = session)
             }
-        }
-    }
-}
-
-@Composable
-private fun GarminSyncCard(onClick: () -> Unit) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Watch, null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.size(22.dp))
-            }
-            Column(Modifier.weight(1f)) {
-                Text("Sincronizar Garmin", style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold)
-                Text("Importa tus actividades de Health Connect",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            }
-            Icon(Icons.Filled.ChevronRight, null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
         }
     }
 }
