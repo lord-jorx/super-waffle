@@ -1,5 +1,6 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -17,6 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lordj.fitnessapp.data.health.GarminSession
@@ -32,15 +36,39 @@ fun GarminSyncScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val vm: GarminSyncViewModel = viewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val importMessage by vm.importMessage.collectAsStateWithLifecycle()
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        val allGranted = grants.values.isNotEmpty() && grants.values.all { it }
-        vm.onPermissionsResult(allGranted)
+    // Re-check permissions every time the screen resumes (e.g. returning from Health Connect settings)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) vm.checkStatus()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Launcher for the Health Connect permission management screen
+    val settingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { vm.checkStatus() }
+
+    fun openHealthConnectPermissions() {
+        try {
+            // Android 14+ built-in Health Connect: opens the per-app permission screen
+            val intent = Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+                putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
+            }
+            settingsLauncher.launch(intent)
+        } catch (_: Exception) {
+            // Fallback: open general Health Connect settings
+            try {
+                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
+                settingsLauncher.launch(intent)
+            } catch (_: Exception) { /* no Health Connect on device */ }
+        }
     }
 
     LaunchedEffect(importMessage) {
@@ -131,7 +159,7 @@ fun GarminSyncScreen(
                                     "y calorías en Health Connect para leer tus entrenamientos de Garmin.",
                         )
                         Button(
-                            onClick = { permissionLauncher.launch(HealthConnectManager.PERMISSIONS.toTypedArray()) },
+                            onClick = { openHealthConnectPermissions() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.Key, null)
