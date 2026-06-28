@@ -1,6 +1,7 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,10 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lordj.fitnessapp.FitnessApp
 import com.lordj.fitnessapp.data.health.GarminSession
 import com.lordj.fitnessapp.data.health.HealthConnectManager
 import com.lordj.fitnessapp.ui.viewmodel.GarminSyncState
@@ -38,9 +37,10 @@ fun GarminSyncScreen(
     val importMessage by vm.importMessage.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = PermissionController.createRequestPermissionResultContract()
-    ) { granted ->
-        vm.onPermissionsResult(granted.containsAll(HealthConnectManager.PERMISSIONS))
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val allGranted = grants.values.isNotEmpty() && grants.values.all { it }
+        vm.onPermissionsResult(allGranted)
     }
 
     LaunchedEffect(importMessage) {
@@ -131,7 +131,7 @@ fun GarminSyncScreen(
                                     "y calorías en Health Connect para leer tus entrenamientos de Garmin.",
                         )
                         Button(
-                            onClick = { permissionLauncher.launch(HealthConnectManager.PERMISSIONS) },
+                            onClick = { permissionLauncher.launch(HealthConnectManager.PERMISSIONS.toTypedArray()) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.Key, null)
