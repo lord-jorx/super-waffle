@@ -197,11 +197,12 @@ private fun SettingsItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
-            trailing?.invoke()
-                ?: if (onClick != null) {
-                    Icon(Icons.Filled.ChevronRight, null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
-                }
+            if (trailing != null) {
+                trailing()
+            } else if (onClick != null) {
+                Icon(Icons.Filled.ChevronRight, null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+            }
         }
     }
 }

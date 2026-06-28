@@ -80,7 +80,7 @@ class WorkoutCreateViewModel(private val repo: WorkoutRepository) : ViewModel() 
                         exerciseId = draft.exercise.id,
                         orderIndex = idx,
                         targetSets = draft.targetSets,
-                        targetReps = draft.targetReps,
+                        targetReps = draft.targetReps.toString(),
                         restSeconds = draft.restSeconds
                     )
                 )
