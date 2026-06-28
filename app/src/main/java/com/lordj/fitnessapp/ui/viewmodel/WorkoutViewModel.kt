@@ -7,6 +7,11 @@ import com.lordj.fitnessapp.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+data class WorkoutExerciseDetail(
+    val workoutExercise: WorkoutExercise,
+    val exercise: Exercise
+)
+
 class WorkoutViewModel(private val repo: WorkoutRepository) : ViewModel() {
 
     val workouts: StateFlow<List<Workout>> = repo.getAllWorkouts()
@@ -24,10 +29,20 @@ class WorkoutViewModel(private val repo: WorkoutRepository) : ViewModel() {
     private val _workoutExercises = MutableStateFlow<List<WorkoutExercise>>(emptyList())
     val workoutExercises: StateFlow<List<WorkoutExercise>> = _workoutExercises
 
+    private val _exerciseDetails = MutableStateFlow<List<WorkoutExerciseDetail>>(emptyList())
+    val exerciseDetails: StateFlow<List<WorkoutExerciseDetail>> = _exerciseDetails
+
     fun loadWorkout(id: Long) {
         viewModelScope.launch { _workout.value = repo.getWorkoutById(id) }
         repo.getWorkoutExercises(id)
-            .onEach { _workoutExercises.value = it }
+            .onEach { weList ->
+                _workoutExercises.value = weList
+                _exerciseDetails.value = weList.mapNotNull { we ->
+                    repo.getExerciseById(we.exerciseId)?.let { ex ->
+                        WorkoutExerciseDetail(we, ex)
+                    }
+                }
+            }
             .launchIn(viewModelScope)
     }
 

@@ -40,6 +40,9 @@ interface WorkoutDao {
     @Delete
     suspend fun deleteWorkoutExercise(we: WorkoutExercise)
 
+    @Query("UPDATE workout_exercises SET notes = :notes WHERE exerciseId = :exerciseId AND (notes IS NULL OR notes = '')")
+    suspend fun patchNotesForExercise(exerciseId: Long, notes: String)
+
     @Query("SELECT COUNT(*) FROM workouts")
     suspend fun getCount(): Int
 }

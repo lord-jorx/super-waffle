@@ -399,7 +399,7 @@ object DatabaseSeeder {
         }
 
         // ── WORKOUTS ──
-        data class WE(val name: String, val sets: Int, val reps: String, val rest: Int = 90)
+        data class WE(val name: String, val sets: Int, val reps: String, val rest: Int = 90, val notes: String = "")
 
         data class WorkoutDef(val workout: Workout, val exercises: List<WE>)
 
@@ -408,37 +408,37 @@ object DatabaseSeeder {
                 Workout(name = "Día A – Piernas", description = "Tu rutina de piernas: Cuádriceps, Isquiotibiales, Gemelos",
                     dayLabel = "Día A", colorHex = "#FF4CAF50", estimatedMinutes = 70, isUserRoutine = true, orderIndex = 0),
                 listOf(
-                    WE("Cardio", 1, "10 min", 0),
-                    WE("Extensión de Cuádriceps", 4, "10", 90),
-                    WE("Sentadilla", 3, "10", 120),
-                    WE("Curl Femoral", 4, "10", 90),
-                    WE("Prensa de Piernas", 3, "10-20", 120),
-                    WE("Elevación de Talones de Pie", 4, "10", 60)
+                    WE("Cardio", 1, "10 min", 0, "Calentamiento cardiovascular en zona 2 (ritmo de conversación). Bici estática o cinta a ritmo suave. Activa la musculatura de piernas antes de los ejercicios compuestos."),
+                    WE("Extensión de Cuádriceps", 4, "10", 90, "Contrae 1 seg en la cima para máxima activación del cuádriceps. Primero en la sesión para una pre-fatiga controlada — llegará a sentadilla con los cuádriceps ya activados."),
+                    WE("Sentadilla", 3, "10", 120, "El Rey. Profundidad completa — muslos paralelos al suelo mínimo. Talones plantados. Rodillas siguiendo la dirección de los dedos del pie."),
+                    WE("Curl Femoral", 4, "10", 90, "Bajada lenta (3 seg eccéntrico). No levantes las caderas del banco. Contrae los isquios en la cima."),
+                    WE("Prensa de Piernas", 3, "10-20", 120, "Después de sentadilla: más volumen de cuádriceps con menor fatiga sistémica. Rango completo sin bloquear las rodillas arriba."),
+                    WE("Elevación de Talones de Pie", 4, "10", 60, "Rango completo imprescindible: estiramiento total abajo, contracción máxima arriba. Los gemelos responden al volumen, no al peso máximo.")
                 )
             ),
             WorkoutDef(
                 Workout(name = "Día B – Espalda y Hombros", description = "Tu rutina de espalda, deltoides posterior y hombros",
                     dayLabel = "Día B", colorHex = "#FF2196F3", estimatedMinutes = 75, isUserRoutine = true, orderIndex = 1),
                 listOf(
-                    WE("Cardio", 1, "7 min", 0),
-                    WE("Jalón al Pecho", 4, "8-10", 90),
-                    WE("Jalón Agarre Cerrado", 4, "10", 90),
-                    WE("Remo con Peso", 4, "10", 90),
-                    WE("Cable Reverse Fly de Pie", 3, "6-10", 60),
-                    WE("Press con Mancuernas", 4, "8-10", 90),
-                    WE("Elevaciones Laterales", 3, "10", 60)
+                    WE("Cardio", 1, "7 min", 0, "Calentamiento en zona 2. Elíptica o bici a ritmo ligero para activar el tren superior sin agotar las reservas energéticas."),
+                    WE("Jalón al Pecho", 4, "8-10", 90, "Primer ejercicio de tirón. Lleva los codos hacia abajo y hacia atrás — no tires con los bíceps. Retracción escapular antes de cada repetición."),
+                    WE("Jalón Agarre Cerrado", 4, "10", 90, "El agarre supino (palmas hacia ti) recluta más el bíceps como asistente. Buen complemento al jalón con agarre abierto."),
+                    WE("Remo con Peso", 4, "10", 90, "Retracta los omóplatos antes de tirar. El movimiento empieza en la espalda, no en los brazos."),
+                    WE("Cable Reverse Fly de Pie", 3, "6-10", 60, "Peso ligero y técnica perfecta. Esencial para el deltoides posterior y la salud del manguito rotador. No lo saltes."),
+                    WE("Press con Mancuernas", 4, "8-10", 90, "Codos ligeramente por delante del cuerpo para proteger el manguito rotador. No bloquees los codos arriba."),
+                    WE("Elevaciones Laterales", 3, "10", 60, "El músculo más difícil de activar. Meñique ligeramente más alto que el pulgar. Sin impulso de ningún tipo.")
                 )
             ),
             WorkoutDef(
                 Workout(name = "Día C – Pecho y Brazos", description = "Tu rutina de pecho, bíceps y tríceps",
                     dayLabel = "Día C", colorHex = "#FFFF5722", estimatedMinutes = 75, isUserRoutine = true, orderIndex = 2),
                 listOf(
-                    WE("Cardio", 1, "10 min", 0),
-                    WE("Press en Smith Machine", 4, "10", 90),
-                    WE("Press Inclinado en Smith Machine", 4, "8-10", 90),
-                    WE("Curl Alterno con Mancuerna", 4, "6-10", 60),
-                    WE("Curl con Mancuerna", 4, "8-10", 60),
-                    WE("Extensión de Tríceps en Cable Tumbado", 4, "10", 60)
+                    WE("Cardio", 1, "10 min", 0, "Calentamiento cardiovascular en zona 2. Cinta o bici a ritmo suave para activar el pecho y los brazos antes de los ejercicios compuestos."),
+                    WE("Press en Smith Machine", 4, "10", 90, "La guía de la Smith permite enfocarse totalmente en la técnica. Baja la barra al pecho medio-inferior. Agarre ligeramente más ancho que los hombros."),
+                    WE("Press Inclinado en Smith Machine", 4, "8-10", 90, "30-45° de inclinación para el pectoral superior — el punto débil de la mayoría. Priorizarlo al inicio de la sesión da mejores resultados."),
+                    WE("Curl Alterno con Mancuerna", 4, "6-10", 60, "Alterna brazos para mayor concentración en cada repetición. Gira la muñeca en supinación al subir. Codo fijo al costado del cuerpo."),
+                    WE("Curl con Mancuerna", 4, "8-10", 60, "Bilateral para más sobrecarga total. Codos pegados a los lados durante todo el movimiento. Controla la bajada."),
+                    WE("Extensión de Tríceps en Cable Tumbado", 4, "10", 60, "La posición de cable crea tensión constante en todo el rango de movimiento. Codos fijos apuntando al techo durante toda la ejecución.")
                 )
             ),
             WorkoutDef(
@@ -503,10 +503,38 @@ object DatabaseSeeder {
                         orderIndex = idx,
                         targetSets = we.sets,
                         targetReps = we.reps,
-                        restSeconds = we.rest
+                        restSeconds = we.rest,
+                        notes = we.notes
                     )
                 )
             }
+        }
+    }
+
+    // Patches coach notes for existing installations (safe to run every launch — only updates empty notes)
+    suspend fun patchNotes(db: AppDatabase) {
+        val notes = mapOf(
+            "Cardio" to "Calentamiento cardiovascular en zona 2 (ritmo de conversación). Bici estática, cinta o elíptica a ritmo suave. La duración está indicada en la ficha de la sesión.",
+            "Extensión de Cuádriceps" to "Contrae 1 seg en la cima para máxima activación del cuádriceps. Primero en la sesión para una pre-fatiga controlada.",
+            "Sentadilla" to "El Rey. Profundidad completa — muslos paralelos al suelo mínimo. Talones plantados. Rodillas siguiendo la dirección de los dedos del pie.",
+            "Curl Femoral" to "Bajada lenta (3 seg eccéntrico). No levantes las caderas del banco. Contrae los isquios en la cima.",
+            "Prensa de Piernas" to "Después de sentadilla: más volumen de cuádriceps con menor fatiga sistémica. Rango completo sin bloquear las rodillas arriba.",
+            "Elevación de Talones de Pie" to "Rango completo imprescindible: estiramiento total abajo, contracción máxima arriba. Los gemelos responden al volumen, no al peso máximo.",
+            "Jalón al Pecho" to "Lleva los codos hacia abajo y hacia atrás — no tires con los bíceps. Retracción escapular antes de cada repetición.",
+            "Jalón Agarre Cerrado" to "El agarre supino (palmas hacia ti) recluta más el bíceps como asistente. Buen complemento al jalón con agarre abierto.",
+            "Remo con Peso" to "Retracta los omóplatos antes de tirar. El movimiento empieza en la espalda, no en los brazos.",
+            "Cable Reverse Fly de Pie" to "Peso ligero y técnica perfecta. Esencial para el deltoides posterior y la salud del manguito rotador. No lo saltes.",
+            "Press con Mancuernas" to "Codos ligeramente por delante del cuerpo para proteger el manguito rotador. No bloquees los codos arriba.",
+            "Elevaciones Laterales" to "El músculo más difícil de activar. Meñique ligeramente más alto que el pulgar. Sin impulso de ningún tipo.",
+            "Press en Smith Machine" to "La guía de la Smith permite enfocarse totalmente en la técnica. Baja la barra al pecho medio-inferior.",
+            "Press Inclinado en Smith Machine" to "30-45° de inclinación para el pectoral superior — el punto débil de la mayoría. Priorizarlo al inicio de la sesión da mejores resultados.",
+            "Curl Alterno con Mancuerna" to "Alterna brazos para mayor concentración en cada repetición. Gira la muñeca en supinación al subir. Codo fijo al costado.",
+            "Curl con Mancuerna" to "Bilateral para más sobrecarga total. Codos pegados a los lados durante todo el movimiento. Controla la bajada.",
+            "Extensión de Tríceps en Cable Tumbado" to "La posición de cable crea tensión constante en todo el rango de movimiento. Codos fijos apuntando al techo durante toda la ejecución."
+        )
+        notes.forEach { (name, note) ->
+            val exercise = db.exerciseDao().getExerciseByName(name) ?: return@forEach
+            db.workoutDao().patchNotesForExercise(exercise.id, note)
         }
     }
 }

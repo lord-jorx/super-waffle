@@ -149,7 +149,8 @@ fun FitnessNavGraph() {
                 WorkoutDetailScreen(
                     workoutId = workoutId,
                     onBack = { navController.popBackStack() },
-                    onStartWorkout = { id -> navController.navigate(Screen.ActiveWorkout.createRoute(id)) }
+                    onStartWorkout = { id -> navController.navigate(Screen.ActiveWorkout.createRoute(id)) },
+                    onExerciseDetail = { id -> navController.navigate(Screen.ExerciseDetail.createRoute(id)) }
                 )
             }
             composable(

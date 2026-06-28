@@ -27,6 +27,7 @@ class FitnessApp : Application() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
             DatabaseSeeder.seed(database)
+            DatabaseSeeder.patchNotes(database)
         }
     }
 }
