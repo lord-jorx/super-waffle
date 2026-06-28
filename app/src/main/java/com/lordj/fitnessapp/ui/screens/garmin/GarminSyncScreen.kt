@@ -1,6 +1,8 @@
 package com.lordj.fitnessapp.ui.screens.garmin
 
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -14,6 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,19 +60,27 @@ fun GarminSyncScreen(
     ) { vm.checkStatus() }
 
     fun openHealthConnectPermissions() {
-        try {
-            // Android 14+ built-in Health Connect: opens the per-app permission screen
-            val intent = Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+        val intents = listOf(
+            Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
                 putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
-            }
-            settingsLauncher.launch(intent)
-        } catch (_: Exception) {
-            // Fallback: open general Health Connect settings
-            try {
-                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
-                settingsLauncher.launch(intent)
-            } catch (_: Exception) { /* no Health Connect on device */ }
+            },
+            Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS"),
+        )
+        for (intent in intents) {
+            try { settingsLauncher.launch(intent); return } catch (_: Exception) { }
         }
+        // Fallback garantizado: ajustes de la app (siempre funciona en Android)
+        settingsLauncher.launch(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null))
+        )
+    }
+
+    fun openAppSettings() {
+        settingsLauncher.launch(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null))
+        )
     }
 
     LaunchedEffect(importMessage) {
@@ -148,7 +160,10 @@ fun GarminSyncScreen(
 
                 is GarminSyncState.NeedsPermissions -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -165,6 +180,41 @@ fun GarminSyncScreen(
                             Icon(Icons.Filled.Key, null)
                             Spacer(Modifier.width(8.dp))
                             Text("Conceder permisos")
+                        }
+
+                        HorizontalDivider()
+
+                        Text(
+                            "¿No funciona el botón? Hazlo manualmente:",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text("En Samsung / Android 14+:",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary)
+                                listOf(
+                                    "Ajustes → busca 'Health Connect'",
+                                    "Permisos de aplicación",
+                                    "Selecciona FitnessTracker",
+                                    "Activa: Ejercicio, Frecuencia cardíaca, Calorías"
+                                ).forEachIndexed { i, step ->
+                                    Text("${i + 1}. $step",
+                                        style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = { openAppSettings() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Settings, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Abrir ajustes de FitnessTracker")
                         }
                     }
                 }
