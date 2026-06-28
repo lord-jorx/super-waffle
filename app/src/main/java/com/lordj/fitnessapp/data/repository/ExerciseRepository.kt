@@ -17,6 +17,7 @@ class ExerciseRepository(
     fun getSetsByExercise(exerciseId: Long): Flow<List<SetLog>> = setLogDao.getSetsByExercise(exerciseId)
 
     suspend fun getExerciseById(id: Long): Exercise? = exerciseDao.getExerciseById(id)
+    suspend fun searchExerciseByName(name: String): Exercise? = exerciseDao.getExerciseByName(name)
     suspend fun getMaxWeightForExercise(id: Long): Double? = setLogDao.getMaxWeightForExercise(id)
     suspend fun getRecentSetsForExercise(id: Long, limit: Int = 100): List<SetLog> = setLogDao.getRecentSetsByExercise(id, limit)
     suspend fun insertExercise(exercise: Exercise): Long = exerciseDao.insertExercise(exercise)

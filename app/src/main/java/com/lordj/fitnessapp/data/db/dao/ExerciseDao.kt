@@ -33,6 +33,9 @@ interface ExerciseDao {
     @Delete
     suspend fun deleteExercise(exercise: Exercise)
 
+    @Query("SELECT * FROM exercises WHERE name = :name LIMIT 1")
+    suspend fun getExerciseByName(name: String): Exercise?
+
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun getCount(): Int
 }

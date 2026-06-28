@@ -17,6 +17,7 @@ import com.lordj.fitnessapp.ui.screens.export.ExportScreen
 import com.lordj.fitnessapp.ui.screens.garmin.GarminSyncScreen
 import com.lordj.fitnessapp.ui.screens.history.HistoryScreen
 import com.lordj.fitnessapp.ui.screens.home.HomeScreen
+import com.lordj.fitnessapp.ui.screens.programs.ProgramDetailScreen
 import com.lordj.fitnessapp.ui.screens.progress.ProgressScreen
 import com.lordj.fitnessapp.ui.screens.settings.SettingsScreen
 import com.lordj.fitnessapp.ui.screens.workouts.ActiveWorkoutScreen
@@ -47,6 +48,9 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Garmin : Screen("garmin", "Garmin", Icons.Filled.Watch)
     object Settings : Screen("settings", "Ajustes", Icons.Filled.Settings)
     object WorkoutCreate : Screen("workout_create", "Nueva Rutina", Icons.Filled.Add)
+    object ProgramDetail : Screen("program/{programId}", "", Icons.Filled.LibraryBooks) {
+        fun createRoute(id: String) = "program/$id"
+    }
 }
 
 val bottomNavItems = listOf(Screen.Home, Screen.Exercises, Screen.Workouts, Screen.Progress, Screen.History)
@@ -123,7 +127,8 @@ fun FitnessNavGraph() {
                 WorkoutListScreen(
                     padding = padding,
                     onWorkoutClick = { id -> navController.navigate(Screen.WorkoutDetail.createRoute(id)) },
-                    onCreateWorkout = { navController.navigate(Screen.WorkoutCreate.route) }
+                    onCreateWorkout = { navController.navigate(Screen.WorkoutCreate.route) },
+                    onProgramClick = { id -> navController.navigate(Screen.ProgramDetail.createRoute(id)) }
                 )
             }
             composable(Screen.WorkoutCreate.route) {
@@ -184,6 +189,21 @@ fun FitnessNavGraph() {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) }
+                )
+            }
+            composable(
+                Screen.ProgramDetail.route,
+                arguments = listOf(navArgument("programId") { type = NavType.StringType })
+            ) { backStack ->
+                val programId = backStack.arguments?.getString("programId") ?: return@composable
+                ProgramDetailScreen(
+                    programId = programId,
+                    onBack = { navController.popBackStack() },
+                    onSavedAsRoutine = {
+                        navController.navigate(Screen.Workouts.route) {
+                            popUpTo(Screen.Workouts.route) { inclusive = true }
+                        }
+                    }
                 )
             }
         }
