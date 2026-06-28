@@ -2,6 +2,7 @@ package com.lordj.fitnessapp
 
 import android.app.Application
 import com.lordj.fitnessapp.data.db.AppDatabase
+import com.lordj.fitnessapp.data.health.HealthConnectManager
 import com.lordj.fitnessapp.data.repository.ExerciseRepository
 import com.lordj.fitnessapp.data.repository.WorkoutRepository
 import com.lordj.fitnessapp.data.seeder.DatabaseSeeder
@@ -19,6 +20,8 @@ class FitnessApp : Application() {
     val workoutRepository by lazy {
         WorkoutRepository(database.workoutDao(), database.workoutSessionDao(), database.setLogDao(), database.exerciseDao())
     }
+
+    val healthConnectManager by lazy { HealthConnectManager(this) }
 
     override fun onCreate() {
         super.onCreate()

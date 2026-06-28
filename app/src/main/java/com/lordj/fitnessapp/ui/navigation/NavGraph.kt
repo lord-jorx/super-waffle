@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseDetailScreen
 import com.lordj.fitnessapp.ui.screens.exercises.ExerciseListScreen
 import com.lordj.fitnessapp.ui.screens.export.ExportScreen
+import com.lordj.fitnessapp.ui.screens.garmin.GarminSyncScreen
 import com.lordj.fitnessapp.ui.screens.history.HistoryScreen
 import com.lordj.fitnessapp.ui.screens.home.HomeScreen
 import com.lordj.fitnessapp.ui.screens.progress.ProgressScreen
@@ -37,6 +38,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
         fun createRoute(id: Long) = "active_workout/$id"
     }
     object Export : Screen("export", "Exportar", Icons.Filled.FileDownload)
+    object Garmin : Screen("garmin", "Garmin", Icons.Filled.Watch)
 }
 
 val bottomNavItems = listOf(Screen.Home, Screen.Exercises, Screen.Workouts, Screen.Progress, Screen.History)
@@ -77,7 +79,8 @@ fun FitnessNavGraph() {
                     padding = padding,
                     onNavigateToWorkouts = { navController.navigate(Screen.Workouts.route) },
                     onNavigateToHistory = { navController.navigate(Screen.History.route) },
-                    onStartWorkout = { id -> navController.navigate(Screen.ActiveWorkout.createRoute(id)) }
+                    onStartWorkout = { id -> navController.navigate(Screen.ActiveWorkout.createRoute(id)) },
+                    onNavigateToGarmin = { navController.navigate(Screen.Garmin.route) }
                 )
             }
             composable(Screen.Exercises.route) {
@@ -139,6 +142,12 @@ fun FitnessNavGraph() {
             }
             composable(Screen.Export.route) {
                 ExportScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Screen.Garmin.route) {
+                GarminSyncScreen(
+                    padding = padding,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
